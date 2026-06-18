@@ -19,17 +19,33 @@ function signals(facts) {
   const spawns = facts.agent_spawns || [];
   const totalSpawns = spawns.reduce((a, b) => a + b[1], 0);
   const generic = spawns.filter((s) => /generic|general|default/.test(s[0])).reduce((a, b) => a + b[1], 0);
+  const exts = facts.file_ext || [];
+  const extTotal = exts.reduce((a, b) => a + b[1], 0);
+  const topProject = (facts.projects || [])[0] || null;
   return {
     total,
     opusShare: total > 0 ? (cbt.opus || 0) / total : 0,
+    haikuShare: total > 0 ? (cbt.haiku || 0) / total : 0,
     skillCalls: facts.skill_calls_total || 0,
     workflowRuns: facts.workflow_runs || 0,
     totalSpawns,
     genericShare: totalSpawns > 0 ? generic / totalSpawns : 0,
     cd: m(facts.bash_bins, 'cd'),
     webSearch: m(facts.tools, 'WebSearch'),
+    reads: m(facts.tools, 'Read'),
     codegraph: m(facts.mcp, 'codegraph'),
-    topExts: (facts.file_ext || []).map((x) => x[0]),
+    exploreSpawns: m(facts.agent_spawns, 'Explore'),
+    topExts: exts.map((x) => x[0]),
+    topExt: exts.length ? exts[0][0] : null,
+    extShare: extTotal > 0 ? exts[0][1] / extTotal : 0,
+    cacheRatio: facts.cache_ratio || 0,
+    cacheTot: (facts.cache_read || 0) + (facts.cache_creation || 0),
+    toolErrorRate: facts.tool_error_rate || 0,
+    toolErrors: facts.tool_errors || 0,
+    activeDays: facts.active_days || 0,
+    sessions: facts.sessions || 0,
+    topProject,
+    topProjectShare: topProject && total > 0 ? topProject.cost / total : 0,
   };
 }
 
@@ -109,6 +125,74 @@ const RULE_CATALOG = [
       label: 'Kill the cd tax',
       note: `cd ran ${s.cd.toLocaleString()}× — shell state doesn't persist between calls; absolute paths are cleaner`,
       copy: 'Use absolute paths in all shell commands instead of cd — shell state does not persist between calls.',
+    } : null,
+  },
+  {
+    id: 'empty-state',
+    run: (s) => (s.activeDays === 0 || s.total === 0) ? {
+      priority: 100,
+      label: 'Run your first scan',
+      note: 'No usage data yet — scan your Claude Code logs to get personalized tips',
+      copy: 'ccmaxx scan',
+    } : null,
+  },
+  {
+    id: 'haiku-underused',
+    run: (s) => (s.haikuShare < 0.05 && s.opusShare > 0.4 && s.totalSpawns >= 5) ? {
+      priority: 92,
+      label: 'Route sub-agents to Haiku',
+      note: 'Haiku is <5% of your spend — most sub-agent work (reads, edits, search) runs fine on it',
+      copy: 'For this session, run all sub-agents on Haiku unless they need deep reasoning.',
+    } : null,
+  },
+  {
+    id: 'file-ext-specialist',
+    run: (s, inv) => {
+      if (!s.topExt || s.extShare < 0.4) return null;
+      const map = LANG[s.topExt];
+      if (!map || !inv.agents.has(map[1])) return null;
+      return {
+        priority: 88,
+        label: `Use ${map[1]}`,
+        note: `${Math.round(s.extShare * 100)}% of your edits are ${map[0]} — use its specialist reviewer`,
+        copy: `Use the ${map[1]} agent to review the ${map[0]} changes from this session for correctness, security, and idioms.`,
+      };
+    },
+  },
+  {
+    id: 'project-cost',
+    run: (s) => (s.topProject && s.topProjectShare >= 0.4) ? {
+      priority: 84,
+      label: 'One project dominates your spend',
+      note: `"${s.topProject.name}" is ~${Math.round(s.topProjectShare * 100)}% of your est. compute — focus optimization there`,
+      copy: 'Review where the most tokens go in this project and route its mechanical work to cheaper models.',
+    } : null,
+  },
+  {
+    id: 'error-rate',
+    run: (s) => (s.toolErrorRate > 0.08 && s.toolErrors > 20) ? {
+      priority: 78,
+      label: 'High tool-error rate',
+      note: `${Math.round(s.toolErrorRate * 100)}% of your tool calls error — often wrong paths or flaky commands`,
+      copy: 'Many tool calls have been failing. Before each command, verify the path/precondition and prefer absolute paths.',
+    } : null,
+  },
+  {
+    id: 'cache-reuse',
+    run: (s) => (s.cacheTot > 1e6 && s.cacheRatio < 0.55) ? {
+      priority: 55,
+      label: 'Reuse the prompt cache',
+      note: `Only ${Math.round(s.cacheRatio * 100)}% cache reuse — keep related work in one session to hit the cache`,
+      copy: 'Keep related work in a single session so the prompt cache is reused instead of recreated.',
+    } : null,
+  },
+  {
+    id: 'explore-agent',
+    run: (s, inv) => (s.reads > 1500 && s.exploreSpawns < 20 && inv.agents.has('Explore')) ? {
+      priority: 58,
+      label: 'Use the Explore agent',
+      note: `${s.reads.toLocaleString()} Read calls — delegate broad searches to a cheap Explore sub-agent`,
+      copy: 'Use the Explore agent (very thorough) to locate the relevant code across the repo and report file:line, instead of reading files one by one.',
     } : null,
   },
 ];

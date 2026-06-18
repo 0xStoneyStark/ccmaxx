@@ -36,8 +36,19 @@ function recommend(facts) {
     if (r) items.push(r);
   }
   items.sort((a, b) => b.priority - a.priority);
+  // dedupe by label (e.g. file-ext-specialist and specialist-agents can both suggest the same agent);
+  // items are priority-sorted, so the first occurrence (highest priority) wins.
+  const seen = new Set();
+  const deduped = items.filter((i) => {
+    const k = String(i.label).trim().toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  });
   const tagFor = (p) => (p >= 90 ? 'high' : p >= 70 ? 'med' : 'low');
-  const forYou = items.slice(0, 8).map((i) => ({ label: i.label, note: i.note, copy: i.copy, tag: tagFor(i.priority) }));
+  // Note: AGENTS are inventory-validated below and in the rules; SKILLS are NOT filtered against
+  // ~/.claude/skills because most skills ship via plugins/ECC (not that dir), so filtering would
+  // wrongly drop valid core skills. Rules only reference broadly-available skills + installed agents.
+  const forYou = deduped.slice(0, 8).map((i) => ({ label: i.label, note: i.note, copy: i.copy, tag: tagFor(i.priority) }));
 
   // filter the AGENTS category to specialists the user actually has (if we could read any)
   const categories = base.categories.map((c) => {

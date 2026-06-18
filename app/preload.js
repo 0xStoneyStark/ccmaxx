@@ -32,6 +32,8 @@ function buildStats(f) {
     { label: 'active days', value: String(f.active_days || 0), num: f.active_days || 0, dec: 0 },
     { label: 'on Opus', value: opusPct + '%', num: opusPct, suffix: '%', dec: 0 },
     { label: 'agents spawned', value: String(f.agent_spawns_total || 0), num: f.agent_spawns_total || 0, dec: 0 },
+    { label: 'day streak', value: String(f.current_streak || 0), num: f.current_streak || 0, dec: 0 },
+    { label: 'cache reuse', value: Math.round((f.cache_ratio || 0) * 100) + '%', num: Math.round((f.cache_ratio || 0) * 100), suffix: '%', dec: 0 },
   ];
 }
 

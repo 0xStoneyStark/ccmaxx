@@ -35,6 +35,8 @@ function printSummary(f) {
   const topTools = (f.tools || []).slice(0, 6).map((t) => `${t[0]} ${fmt(t[1])}`).join('  ');
   console.log(`  ${C.dim}tools:${C.r} ${topTools}`);
   console.log(`  ${C.dim}agents:${C.r} ${f.agent_spawns_total} spawned   ${C.dim}skills:${C.r} ${f.skill_calls_total} used   ${C.dim}workflows:${C.r} ${f.workflow_runs}`);
+  const tp = (f.projects || [])[0];
+  console.log(`  ${C.dim}streak:${C.r} ${f.current_streak || 0}d ${C.dim}(best ${f.longest_streak || 0})${C.r}   ${C.dim}cache reuse:${C.r} ${Math.round((f.cache_ratio || 0) * 100)}%${tp ? `   ${C.dim}top project:${C.r} ${tp.name} ${C.dim}($${Math.round(tp.cost).toLocaleString()})${C.r}` : ''}`);
 }
 
 function printSuggestions() {

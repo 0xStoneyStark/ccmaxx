@@ -20,6 +20,8 @@ const tierOf = (m) => {
   return 'other';
 };
 
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 function walk(dir, out) {
   let entries;
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
@@ -33,6 +35,29 @@ function walk(dir, out) {
 }
 
 function bin(counter, key, n = 1) { counter[key] = (counter[key] || 0) + n; }
+
+// project = first path segment under ~/.claude/projects
+function projOf(file) {
+  const rel = path.relative(P.PROJECTS_DIR, file);
+  return rel.split(path.sep)[0] || '(root)';
+}
+const isSubagent = (file) => file.split(path.sep).includes('subagents');
+
+// current streak = consecutive days ending at the most recent active day; plus longest run
+function streaks(dateSet) {
+  const days = [...dateSet].sort();
+  if (!days.length) return { current: 0, longest: 0 };
+  const toN = (s) => Math.floor(Date.parse(s + 'T00:00:00Z') / 86400000);
+  let longest = 1, run = 1, current = 1;
+  for (let i = 1; i < days.length; i++) {
+    if (toN(days[i]) - toN(days[i - 1]) === 1) { run++; longest = Math.max(longest, run); }
+    else run = 1;
+  }
+  for (let i = days.length - 1; i > 0; i--) {
+    if (toN(days[i]) - toN(days[i - 1]) === 1) current++; else break;
+  }
+  return { current, longest };
+}
 
 function bashBinary(cmd) {
   if (!cmd) return null;
@@ -51,12 +76,25 @@ function extOf(fp) {
   return 'noext';
 }
 
-async function parseFile(file, agg) {
+// detect a typed slash command from a user message's text (count only, never stored)
+function slashOf(content) {
+  let txt = typeof content === 'string' ? content : '';
+  if (!txt && Array.isArray(content)) { const tb = content.find((b) => b && b.type === 'text'); if (tb) txt = tb.text || ''; }
+  if (!txt) return null;
+  const cm = txt.match(/<command-name>\s*(\/?[a-zA-Z0-9:_-]+)/);
+  if (cm) { let c = cm[1]; if (!c.startsWith('/')) c = '/' + c; return c; }
+  const st = txt.trimStart();
+  if (st[0] === '/') { const w = st.split(/\s/)[0]; if (w.length >= 2 && w.length <= 40) return w; }
+  return null;
+}
+
+async function parseFile(file, agg, proj) {
   await new Promise((resolve) => {
     let stream;
     try { stream = fs.createReadStream(file, { encoding: 'utf-8' }); }
     catch { return resolve(); }
     const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+    const pj = agg.projects[proj] || (agg.projects[proj] = { msgs: 0, cost: 0, last: '' });
     rl.on('line', (line) => {
       line = line.trim();
       if (!line) return;
@@ -67,11 +105,14 @@ async function parseFile(file, agg) {
       if (ts) {
         const d = ts.slice(0, 10);
         agg.dates.add(d);
+        if (d > pj.last) pj.last = d;
         const hh = parseInt(ts.slice(11, 13), 10);
         if (!Number.isNaN(hh)) bin(agg.byHourUTC, hh);
+        const dn = new Date(ts).getUTCDay();
+        if (!Number.isNaN(dn)) bin(agg.byDow, DOW[dn]);
       }
       if (t === 'assistant') {
-        agg.msgAssistant++;
+        agg.msgAssistant++; pj.msgs++;
         const m = o.message || {};
         const model = m.model || '(none)';
         bin(agg.models, model);
@@ -79,8 +120,11 @@ async function parseFile(file, agg) {
         const u = m.usage || {};
         const ti = u.input_tokens || 0, to = u.output_tokens || 0;
         const cw = u.cache_creation_input_tokens || 0, cr = u.cache_read_input_tokens || 0;
+        agg.cacheCreate += cw; agg.cacheRead += cr;
         const pr = PRICE[tr];
-        agg.costByTier[tr] = (agg.costByTier[tr] || 0) + (ti * pr.in + to * pr.out + cw * pr.cw + cr * pr.cr) / 1e6;
+        const cost = (ti * pr.in + to * pr.out + cw * pr.cw + cr * pr.cr) / 1e6;
+        agg.costByTier[tr] = (agg.costByTier[tr] || 0) + cost;
+        pj.cost += cost;
         for (const b of (m.content || [])) {
           if (!b || typeof b !== 'object' || b.type !== 'tool_use') continue;
           const name = b.name || '?';
@@ -97,6 +141,12 @@ async function parseFile(file, agg) {
         }
       } else if (t === 'user') {
         agg.msgUser++;
+        const c = o.message && o.message.content;
+        if (Array.isArray(c)) {
+          for (const b of c) if (b && typeof b === 'object' && b.type === 'tool_result' && b.is_error) agg.toolErrors++;
+        }
+        const s = slashOf(c);
+        if (s) bin(agg.slash, s);
       }
     });
     rl.on('close', resolve);
@@ -108,26 +158,41 @@ async function extract({ onProgress } = {}) {
   const files = walk(P.PROJECTS_DIR, []);
   const agg = {
     dates: new Set(), msgAssistant: 0, msgUser: 0, toolCalls: 0, workflowRuns: 0, todoWrites: 0,
-    models: {}, costByTier: {}, tools: {}, mcp: {}, bash: {}, ext: {}, agents: {}, skills: {}, byHourUTC: {},
+    cacheCreate: 0, cacheRead: 0, toolErrors: 0,
+    models: {}, costByTier: {}, tools: {}, mcp: {}, bash: {}, ext: {}, agents: {}, skills: {},
+    byHourUTC: {}, byDow: {}, projects: {}, slash: {},
   };
   let done = 0;
   for (const f of files) {
-    await parseFile(f, agg);
+    await parseFile(f, agg, projOf(f));
     if (onProgress && (++done % 25 === 0 || done === files.length)) onProgress(done, files.length);
   }
   const top = (obj, n = 40) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n);
   const sum = (obj) => Object.values(obj).reduce((a, b) => a + b, 0);
+  const sk = streaks(agg.dates);
+  const cacheTot = agg.cacheRead + agg.cacheCreate;
+  const projects = Object.entries(agg.projects)
+    .map(([name, v]) => ({ name, msgs: v.msgs, cost: Math.round(v.cost * 100) / 100, last: v.last }))
+    .sort((a, b) => b.cost - a.cost).slice(0, 12);
   const facts = {
     generated_at: new Date().toISOString(),
     files_scanned: files.length,
+    sessions: files.filter((f) => !isSubagent(f)).length,
     active_days: agg.dates.size,
+    current_streak: sk.current,
+    longest_streak: sk.longest,
     msg_assistant: agg.msgAssistant,
     msg_user: agg.msgUser,
     tool_calls: agg.toolCalls,
+    tool_errors: agg.toolErrors,
+    tool_error_rate: agg.toolCalls ? Math.round(agg.toolErrors / agg.toolCalls * 1000) / 1000 : 0,
     workflow_runs: agg.workflowRuns,
     todo_writes: agg.todoWrites,
     agent_spawns_total: sum(agg.agents),
     skill_calls_total: sum(agg.skills),
+    cache_creation: agg.cacheCreate,
+    cache_read: agg.cacheRead,
+    cache_ratio: cacheTot ? Math.round(agg.cacheRead / cacheTot * 1000) / 1000 : 0,
     total_cost_estimate: Math.round(Object.values(agg.costByTier).reduce((a, b) => a + b, 0) * 100) / 100,
     cost_by_tier: Object.fromEntries(Object.entries(agg.costByTier).map(([k, v]) => [k, Math.round(v * 100) / 100])),
     models: top(agg.models, 12),
@@ -137,7 +202,10 @@ async function extract({ onProgress } = {}) {
     file_ext: top(agg.ext, 20),
     agent_spawns: top(agg.agents, 20),
     skills: top(agg.skills, 20),
+    slash_cmds: top(agg.slash, 20),
     by_hour_utc: Array.from({ length: 24 }, (_, h) => agg.byHourUTC[h] || 0),
+    by_dow: Object.fromEntries(DOW.map((d) => [d, agg.byDow[d] || 0])),
+    projects,
   };
   P.ensureOut();
   fs.writeFileSync(P.FACTS, JSON.stringify(facts, null, 1));
