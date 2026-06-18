@@ -56,6 +56,7 @@ function create() {
           if (mode === 'cheats') { await win.webContents.executeJavaScript("document.getElementById('tabChe').click();"); await new Promise((r) => setTimeout(r, 500)); }
           else if (mode === 'min') { await win.webContents.executeJavaScript("document.getElementById('minBtn').click();"); await new Promise((r) => setTimeout(r, 600)); }
           else if (mode === 'close') { await win.webContents.executeJavaScript("document.getElementById('closeBtn').click();"); await new Promise((r) => setTimeout(r, 600)); }
+          else if (mode === 'minexpand') { await win.webContents.executeJavaScript("document.getElementById('minBtn').click();"); await new Promise((r) => setTimeout(r, 500)); await win.webContents.executeJavaScript("document.getElementById('bubble').click();"); await new Promise((r) => setTimeout(r, 500)); }
           const [cw, ch] = win.getSize();
           const img = await win.webContents.capturePage();
           fs.writeFileSync(path.join(__dirname, '_capture.png'), img.toPNG());
