@@ -1,6 +1,6 @@
 {
   "name": "ccmaxx",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Claude Code, maxxed. Scans your Claude Code logs locally and keeps a floating cheat widget loaded with personalized skills, agents, loops, prompts & model-routing tips.",
   "bin": {
     "ccmaxx": "bin/ccmaxx.js"
@@ -9,15 +9,34 @@
     "start": "node bin/ccmaxx.js",
     "widget": "node bin/ccmaxx.js widget"
   },
-  "keywords": ["claude-code", "cli", "usage", "analytics", "productivity", "widget"],
+  "keywords": [
+    "claude-code",
+    "cli",
+    "usage",
+    "analytics",
+    "productivity",
+    "widget"
+  ],
   "license": "MIT",
   "author": "0xStoneyStark",
-  "repository": { "type": "git", "url": "git+https://github.com/0xStoneyStark/ccmaxx.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xStoneyStark/ccmaxx.git"
+  },
   "homepage": "https://github.com/0xStoneyStark/ccmaxx#readme",
-  "bugs": { "url": "https://github.com/0xStoneyStark/ccmaxx/issues" },
-  "engines": { "node": ">=18" },
+  "bugs": {
+    "url": "https://github.com/0xStoneyStark/ccmaxx/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "electron": "^33.2.0"
   },
-  "files": ["bin", "src", "app", "data"]
+  "files": [
+    "bin",
+    "src",
+    "app",
+    "data"
+  ]
 }
