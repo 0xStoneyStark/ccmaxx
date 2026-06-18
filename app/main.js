@@ -15,7 +15,7 @@ function create() {
     x: Math.max(20, SW - 400),
     y: 52,
     frame: false,
-    resizable: false,
+    resizable: true, // required so win.setSize() works for minimize↔bubble↔restore (frameless = no visible handles)
     alwaysOnTop: true,
     maximizable: false,
     minimizable: false,
@@ -52,12 +52,14 @@ function create() {
     win.webContents.on('did-finish-load', () => {
       setTimeout(async () => {
         try {
-          if (process.env.CC_CAPTURE === 'cheats') {
-            await win.webContents.executeJavaScript("document.getElementById('tabChe').click();");
-            await new Promise((r) => setTimeout(r, 500));
-          }
+          const mode = process.env.CC_CAPTURE;
+          if (mode === 'cheats') { await win.webContents.executeJavaScript("document.getElementById('tabChe').click();"); await new Promise((r) => setTimeout(r, 500)); }
+          else if (mode === 'min') { await win.webContents.executeJavaScript("document.getElementById('minBtn').click();"); await new Promise((r) => setTimeout(r, 600)); }
+          else if (mode === 'close') { await win.webContents.executeJavaScript("document.getElementById('closeBtn').click();"); await new Promise((r) => setTimeout(r, 600)); }
+          const [cw, ch] = win.getSize();
           const img = await win.webContents.capturePage();
           fs.writeFileSync(path.join(__dirname, '_capture.png'), img.toPNG());
+          fs.writeFileSync(path.join(__dirname, '_capture_size.txt'), cw + 'x' + ch);
         } catch (e) {}
       }, 1000);
     });
