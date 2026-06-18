@@ -1,6 +1,6 @@
 {
   "name": "ccmaxx",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Claude Code, maxxed. Scans your Claude Code logs locally and keeps a floating cheat widget loaded with personalized skills, agents, loops, prompts & model-routing tips.",
   "bin": {
     "ccmaxx": "bin/ccmaxx.js"
