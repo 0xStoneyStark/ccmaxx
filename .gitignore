@@ -1,0 +1,5 @@
+node_modules/
+dist/
+app/_*.png
+app/_*.txt
+*.log

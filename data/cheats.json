@@ -1,0 +1,79 @@
+{
+  "categories": [
+    {
+      "name": "SKILLS",
+      "items": [
+        {"label": "/deep-research", "note": "structured multi-source research (vs 5,080 ad-hoc websearches)", "copy": "/deep-research "},
+        {"label": "/plan", "note": "restate + risks + step plan, waits for your CONFIRM", "copy": "/plan "},
+        {"label": "/feature-dev", "note": "guided feature build with codebase understanding", "copy": "/feature-dev "},
+        {"label": "/code-review", "note": "review uncommitted diff for real bugs", "copy": "/code-review "},
+        {"label": "/security-review", "note": "audit changed code before a demo/handoff", "copy": "/security-review "},
+        {"label": "/python-review", "note": "deep Python review (your py-heavy sims)", "copy": "/python-review "},
+        {"label": "/react-review", "note": "JSX/TSX hooks + render review", "copy": "/react-review "},
+        {"label": "/test-coverage", "note": "find gaps, generate missing tests to a target", "copy": "/test-coverage "},
+        {"label": "/save-session", "note": "snapshot state BEFORE context fills", "copy": "/save-session"},
+        {"label": "/resume-session", "note": "pick up exactly where you left off", "copy": "/resume-session"},
+        {"label": "/gan-design", "note": "generator/evaluator loop for UI/visual work", "copy": "/gan-design "},
+        {"label": "/threejs-site", "note": "cinematic 3D sites (your ThreeJS work)", "copy": "/threejs-site "},
+        {"label": "/mac-mini-remote", "note": "offload heavy builds/training to the Mac mini", "copy": "/mac-mini-remote "},
+        {"label": "/fable-level", "note": "best-of-3-model fused answer for hard problems", "copy": "/fable-level "},
+        {"label": "/model-route", "note": "ask which model tier fits the task", "copy": "/model-route"}
+      ]
+    },
+    {
+      "name": "AGENTS",
+      "items": [
+        {"label": "python-reviewer", "note": "swap a generic agent for the py specialist", "copy": "Use the python-reviewer agent to review the Python changes from this session for correctness, security, and Pythonic idioms. Run it on haiku."},
+        {"label": "csharp-reviewer", "note": "for the CMO C# game mod", "copy": "Use the csharp-reviewer agent to review the C# changes for .NET conventions, async correctness, nullability, and memory issues."},
+        {"label": "react-reviewer", "note": "for jsx/tsx frontends", "copy": "Use the react-reviewer agent to review the JSX/TSX changes for hook correctness, render performance, and accessibility."},
+        {"label": "security-reviewer", "note": "before any commit touching auth/data", "copy": "Use the security-reviewer agent to audit this code for OWASP issues, hardcoded secrets, injection, and unsafe file/network handling."},
+        {"label": "silent-failure-hunter", "note": "finds swallowed errors (your recurring bugs)", "copy": "Use the silent-failure-hunter agent to find swallowed errors, bad fallbacks, and missing error propagation in the changed code."},
+        {"label": "performance-optimizer", "note": "for slow paths / big sims", "copy": "Use the performance-optimizer agent to profile and optimize the slow path here. Report before/after numbers."},
+        {"label": "build-error-resolver", "note": "get the build green, minimal changes", "copy": "Use the build-error-resolver agent to get the build green with minimal, surgical changes only."},
+        {"label": "Explore (haiku)", "note": "cheap thorough code search instead of grep loops", "copy": "Use the Explore agent (very thorough) to locate where the following is implemented across the codebase, then report file:line for each: "},
+        {"label": "tdd-guide", "note": "tests first, then implement", "copy": "Use the tdd-guide agent: write failing tests first for the behaviour below, confirm they fail, then implement to green. Behaviour: "}
+      ]
+    },
+    {
+      "name": "LOOPS",
+      "items": [
+        {"label": "PTT/EW regression guard", "note": "radio sim — auto-test until green", "copy": "/loop 2m Run pytest -k 'test_ew or test_ptt' in the radio sim. Diff the result against the previous run. If two consecutive runs are fully green, stop the loop. Otherwise propose ONE targeted fix and apply it. Hard cap: 10 iterations."},
+        {"label": "Overnight hardening wave", "note": "your autonomous-while-you-sleep pattern", "copy": "Run an overnight autonomous hardening loop. Complete every task below that does NOT require my input. Work in small reviewable waves, commit each GREEN wave, keep looping until the list is done or blocked. Before starting, list the single hardest assumption that could make this impossible and a mitigation. Tasks:\n- "},
+        {"label": "VAANI training gate", "note": "self-paced loop watching a training run", "copy": "/loop Watch the latest training log for VAANI. Each iteration: read the last 20 lines of the train log, report eval_loss and the score. If the run crashed, alert me and stop. If the score exceeds target, stop. Otherwise wait and check again."},
+        {"label": "PR babysitter", "note": "poll CI / PR status", "copy": "/loop 10m Check the status of my open PRs and CI runs. Summarize anything that changed since last check in one line each. Stop when all are green or merged."},
+        {"label": "/schedule (cron agent)", "note": "recurring cloud agent on a schedule", "copy": "/schedule "},
+        {"label": "/santa-loop", "note": "two reviewers must BOTH approve before ship", "copy": "/santa-loop "}
+      ]
+    },
+    {
+      "name": "PROMPTS",
+      "items": [
+        {"label": "DONE MEANS: block", "note": "your #1 fix — falsifiable acceptance criteria", "copy": "Before you start, write a 'DONE MEANS:' block of 3-5 conditions a non-coder can verify, then build to satisfy them. DONE MEANS:\n1. \n2. \n3. "},
+        {"label": "Feasibility gate", "note": "run BEFORE any overnight/agent wave", "copy": "Before we start: what is the single hardest technical assumption that could make this goal literally unmeetable today (encryption, missing creds, an undownloaded dependency, a platform constraint)? Give me the top 3, each with a one-line mitigation or descope. Do not write any code yet."},
+        {"label": "Agent-wave dispatcher", "note": "parallel specialists, cost-routed", "copy": "Use 7 Claude Sonnet sub-agents in parallel to divide this work. Each takes a clearly separated area and must not edit the same files unless coordinated. Add 1 Opus agent at the end to review and merge. Confirm git state before any agent edits."},
+        {"label": "Test surface audit", "note": "find out if the tests are real", "copy": "List every test that exists for what we just built — one line each: what it checks, and what input would make it fail. Then tell me which important behaviours have NO test."},
+        {"label": "Plain-English change map", "note": "read the diff without reading code", "copy": "Summarize this branch's changes in plain English: one sentence per file changed, what it does, and FLAG any file that touches a previously-broken subsystem (audio, maps, EW, auth)."},
+        {"label": "Repo state summary", "note": "start every session with this", "copy": "Run git status and git branch on every active worktree and give me a one-line summary per worktree: current branch, HEAD commit subject, and whether it's clean or dirty."},
+        {"label": "Git-state guard", "note": "prevents the worktree merge drift", "copy": "Before editing anything, confirm the current branch and that it's up to date with main. If we're on stale main or the wrong branch, stop and tell me first."},
+        {"label": "No-hallucination guard", "note": "for factual data (BOQ, pricing, specs)", "copy": "This involves real factual numbers — do NOT invent or estimate any value. For every number, cite the source line/file it came from, and flag anything you are unsure about instead of guessing."},
+        {"label": "Smallest-version check", "note": "kills scope creep", "copy": "What is the smallest version of this that would let me verify the core invariant on real hardware? Build that first, nothing more."}
+      ]
+    },
+    {
+      "name": "MODEL & COST",
+      "items": [
+        {"label": "/model", "note": "switch the active tier", "copy": "/model"},
+        {"label": "Route to Haiku", "note": "mechanical work off Opus (saves ~$)", "copy": "Run this on Haiku — it's mechanical (reads/edits/search), no deep reasoning needed: "},
+        {"label": "Routing rule", "note": "paste once to set the policy", "copy": "Routing policy for this session: Opus only for architecture/hard reasoning; Sonnet for main coding; Haiku for sub-agent reads, mechanical edits, search, and build fixes. Default sub-agents to Haiku unless I say otherwise."}
+      ]
+    },
+    {
+      "name": "SETTINGS / QUICK WINS",
+      "items": [
+        {"label": "codegraph first", "note": "navigate before grep/read (your CLAUDE.md mandate)", "copy": "Use codegraph_explore to navigate this codebase before falling back to grep + reading whole files."},
+        {"label": "Use absolute paths", "note": "kills the cd permission-prompt tax", "copy": "Use absolute paths in all shell commands instead of cd — shell state doesn't persist between calls on Windows."},
+        {"label": "/save-session reminder", "note": "before /compact or long context", "copy": "/save-session"}
+      ]
+    }
+  ]
+}
